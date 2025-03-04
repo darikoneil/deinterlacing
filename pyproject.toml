@@ -35,6 +35,9 @@ classifiers = [
 
 
 dependencies = [
+    "boltons",
+    "numpy",
+    "tqdm",
 ]
 
 
@@ -54,6 +57,9 @@ repository = "https://github.com/darikoneil/resonant_deinterlacing"
 
 
 [project.optional-dependencies]
+gpu = [
+    "cupy",
+]
 testing = [
     "importlib-metadata",
     "pytest",
