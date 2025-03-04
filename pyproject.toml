@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "{{ project_name }}"
+name = "deinterlace"
 version = "0.0.0"
 description = "DESCRIPTION"
 readme = "README.md"
@@ -101,11 +101,11 @@ documentation = [
     "sphinx-rtd-theme",
 ]
 all = [
-    "{{ project_name }}[testing]",
-    "{{ project_name }}[linting]",
-    "{{ project_name }}[coverage]",
-    "{{ project_name }}[distribution]",
-    "{{ project_name }}[documentation]",
+    "deinterlace[testing]",
+    "deinterlace[linting]",
+    "deinterlace[coverage]",
+    "deinterlace[distribution]",
+    "deinterlace[documentation]",
 ]
 
 
@@ -116,7 +116,7 @@ all = [
 
 [tool.setuptools]
 packages = [
-    "{{ project_name }}",
+    "deinterlace",
 ]
 
 
