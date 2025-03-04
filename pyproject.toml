@@ -63,24 +63,12 @@ testing = [
     "tomli-w"
 ]
 linting = [
-    "black",
     "flake8",
-    "flake8-annotations",
     "flake8-annotations-complexity",
-    "flake8-builtins",
-    "flake8-bugbear",
     "flake8-class-attributes-order",
-    "flake8-comprehensions",
     "flake8-dunder-all",
-    "flake8-eradicate",
     "flake8-html",
-    "flake8-isort",
-    "flake8-mutable",
-    "flake8-simplify",
-    "flake8-unused-arguments",
-    "flake8-use-pathlib",
-    "isort",
-    "tryceratops",
+    "ruff",
 ]
 coverage = [
     "coverage[toml]",
