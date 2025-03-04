@@ -1,7 +1,5 @@
 import sys
 from os import devnull
-import pytest
-
 
 """
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,6 +26,7 @@ class BlockPrinting:
     """
     Simple context manager that blocks printing
     """
+
     def __enter__(self):
         self._stdout = sys.stdout
         sys.stdout = open(devnull, "w")

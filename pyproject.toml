@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deinterlace"
-version = "0.0.0"
+version = "0.0.1"
 description = "DESCRIPTION"
 readme = "README.md"
 requires-python = ">=3.10, <=4.0"
@@ -37,7 +37,7 @@ classifiers = [
 dependencies = [
     "boltons",
     "numpy",
-    "tqdm",
+    "tqdm"
 ]
 
 
@@ -58,7 +58,7 @@ repository = "https://github.com/darikoneil/resonant_deinterlacing"
 
 [project.optional-dependencies]
 gpu = [
-    "cupy",
+    "cupy-cuda11x"
 ]
 testing = [
     "importlib-metadata",
@@ -74,7 +74,7 @@ linting = [
     "flake8-class-attributes-order",
     "flake8-dunder-all",
     "flake8-html",
-    "ruff",
+    "ruff"
 ]
 coverage = [
     "coverage[toml]",
@@ -84,7 +84,7 @@ coverage = [
 ]
 distribution = [
     "build",
-    "twine",
+    "twine"
 ]
 documentation = [
     "autoclasstoc",
@@ -92,14 +92,15 @@ documentation = [
     "sphinx",
     "sphinx-autodoc-typehints",
     "sphinx-gallery",
-    "sphinx-rtd-theme",
+    "sphinx-rtd-theme"
 ]
 all = [
+    "deinterlace[gpu]",
     "deinterlace[testing]",
     "deinterlace[linting]",
     "deinterlace[coverage]",
     "deinterlace[distribution]",
-    "deinterlace[documentation]",
+    "deinterlace[documentation]"
 ]
 
 
@@ -248,7 +249,7 @@ extend-allowed-calls = ["pydantic.Field", ]
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 # Declare the default aliases.
-...
+
 
 #///////////////////////////////////////////////////////////////////////////////////////
 #// FORMATTING CONFIGURATION (RUFF)
@@ -262,4 +263,3 @@ skip-magic-trailing-comma = false  # Black Compatibility
 line-ending = "auto"  # Black Compatibility
 docstring-code-format = true  # Auto-formatting of code examples in docstrings
 docstring-code-line-length = "dynamic"  # Line length for code examples in docstrings
-

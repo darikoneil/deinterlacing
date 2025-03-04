@@ -12,6 +12,8 @@ import toml
 A super disgusting way to test the packages install on WINDOWS ONLY. 
 I wrote this when I first learned python, but it works so I kepe it around for the lols.
 """
+
+
 def retrieve_details(path) -> tuple[str, str, list[str]]:
     """
     Get the package details
@@ -19,7 +21,7 @@ def retrieve_details(path) -> tuple[str, str, list[str]]:
     :param path: The path to the package's pyproject.toml
     :returns: The name, version, and dependencies of the package
     """
-    
+
     details = toml.load(path).get("project")
     name = details.get("name")
     version = details.get("version")
@@ -44,7 +46,7 @@ def retrieve_project_file() -> os.PathLike:
     :returns: The project file
     :raises FileNotFoundError: if not found
     """
-    
+
     project_file = os.path.join(os.getcwd(), "pyproject.toml")
     if not os.path.exists(project_file):
         project_file = os.path.join(Path(os.getcwd()).parent, "pyproject.toml")
@@ -62,7 +64,13 @@ def collect_project() -> tuple[Path, os.PathLike, str, str, list[str]]:
     project_file = retrieve_project_file()
     project_directory = retrieve_project_directory(project_file)
     package_name, package_version, package_dependencies = retrieve_details(project_file)
-    return project_directory, project_file, package_name, package_version, package_dependencies
+    return (
+        project_directory,
+        project_file,
+        package_name,
+        package_version,
+        package_dependencies,
+    )
 
 
 # get project information and work from correct directory

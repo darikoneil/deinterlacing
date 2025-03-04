@@ -1,7 +1,8 @@
 import inspect
+from collections.abc import Callable
 from functools import wraps
 from itertools import chain
-from typing import TYPE_CHECKING, Callable, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 from boltons.iterutils import chunk_ranges
@@ -10,7 +11,7 @@ from numpy.fft import ifft as _ifft
 from tqdm import tqdm
 
 __all__ = [
-    "deinterlace",
+    "deinterlace_images",
 ]
 
 
@@ -31,10 +32,10 @@ CupyArray: TypeAlias = cp.ndarray if cp else np.ndarray
 
 
 def _wrap_cupy(
-    function: Callable[CupyArray, CupyArray], *parameter: str
-) -> Callable[np.ndarray, np.ndarray]:
+    function: Callable[[CupyArray], CupyArray], *parameter: str
+) -> Callable[[np.ndarray], np.ndarray]:
     """
-    Convinence decorater that wraps a cupy function such that incoming numpy arrays are
+    Convenience decorator that wraps a cupy function such that incoming numpy arrays are
     converting to cupy arrays and swapped back on return.
 
     :param function: any cupy function that accepts a cupy array
@@ -43,7 +44,7 @@ def _wrap_cupy(
     """
 
     @wraps(function)
-    def decorator(*args, **kwargs) -> Callable[np.ndarray, np.ndarray]:
+    def decorator(*args, **kwargs) -> Callable[[np.ndarray], np.ndarray]:
         sig = inspect.signature(function)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
@@ -53,6 +54,7 @@ def _wrap_cupy(
             bound_args.arguments[param] = cp.asarray(bound_args.arguments[param])
         return function(**bound_args.arguments).get()
 
+    # noinspection PyTypeChecker
     return decorator
 
 
@@ -81,7 +83,7 @@ def _calculate_phase_offset(images: np.ndarray | CupyArray) -> int:
     )
 
 
-def deinterlace(
+def deinterlace_images(
     images: np.ndarray,
     block_size: int | None = None,
     subsample: bool = False,
@@ -90,9 +92,9 @@ def deinterlace(
     """
     Deinterlace images collected using resonance-scanning microscopes such that the
     forward and backward-scanned lines are properly aligned. A fourier-approach is utilized:
-    the fourier transform of the two sets of lines is computed to calculate thecross-power 
-    spectral density. Taking the inverse fourier transform of the cross-power spectral density 
-    yields a matrix whose peak corresponds to the sub-pixel offset between the two sets of lines. 
+    the fourier transform of the two sets of lines is computed to calculate thecross-power
+    spectral density. Taking the inverse fourier transform of the cross-power spectral density
+    yields a matrix whose peak corresponds to the sub-pixel offset between the two sets of lines.
     This translative offset was then discretized and used to shift the backward-scanned lines.
 
     Unfortunately, the fast-fourier transform methods that underlie the implementation
@@ -175,6 +177,6 @@ def deinterlace(
             images[start:stop, 1::2, :phase_offset] = images[
                 start:stop, 1::2, -phase_offset:
             ]
-          # TODO: Implement subpixel-interpolation for sub-pixel alignment
+        # TODO: Implement subpixel-interpolation for sub-pixel alignment
         pbar.update(1)
     pbar.close()

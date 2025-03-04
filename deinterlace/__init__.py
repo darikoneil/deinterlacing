@@ -1,5 +1,5 @@
-from . import deinterlace
+from .deinterlace import deinterlace_images
 
 __all__ = [
-  "deinterlace",
+    "deinterlace_images",
 ]
