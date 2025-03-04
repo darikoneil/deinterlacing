@@ -1,5 +1,4 @@
 @echo off
-setlocal enabledelayedexpansion
 
 :: move to project root
 cd ..
