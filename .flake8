@@ -16,13 +16,13 @@ ignore =
     ANN003,
     W503,
     W605,
-    TRY003
+    TRY003,
 htmldir = linting
 unused-arguments-ignore-stub-functions = True
 unused-arguments-ignore-dunder = True
 unused-arguments-ignore-variadic-names = True
 extend-select = B950
-extend-ignore = E203,E501,E701
+extend-ignore = E203,E501,E701,E704
 exclude =
     .git,
     .github,

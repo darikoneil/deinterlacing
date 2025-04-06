@@ -9,14 +9,25 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "deinterlace"
-version = "0.0.1"
-description = "DESCRIPTION"
+name = "deinterlacing"
+version = "1.0.2"
+description = "A python library for deinterlacing images collected using resonant-scanning microscopes."
 readme = "README.md"
 requires-python = ">=3.10, <=4.0"
-license = {file = "LICENSE"}
+license = "MIT"
 keywords = [
-    "KEYWORD"
+    "deinterlacing",
+    "resonant",
+    "microscopy",
+    "image-processing",
+    "neuroscience",
+    "two-photon",
+    "imaging",
+    "optics",
+    "multiphoton",
+    "scanning",
+    "calcium imaging",
+    "voltage imaging",
 ]
 authors = [
   {name = "Darik A. O'Neil"}
@@ -36,8 +47,9 @@ classifiers = [
 
 dependencies = [
     "boltons",
-    "numpy",
-    "tqdm"
+    "numpy>=2.0.0",
+    "pydantic>=2.11",
+    "tqdm",
 ]
 
 
@@ -57,10 +69,7 @@ repository = "https://github.com/darikoneil/resonant_deinterlacing"
 
 
 [project.optional-dependencies]
-gpu = [
-    "cupy-cuda11x"
-]
-testing = [
+test = [
     "importlib-metadata",
     "pytest",
     "pytest-sugar",
@@ -68,7 +77,7 @@ testing = [
     "toml",
     "tomli-w"
 ]
-linting = [
+lint = [
     "flake8",
     "flake8-annotations-complexity",
     "flake8-class-attributes-order",
@@ -76,31 +85,27 @@ linting = [
     "flake8-html",
     "ruff"
 ]
-coverage = [
+cov = [
     "coverage[toml]",
     "coveralls",
     "toml",
     "tomli-w"
 ]
-distribution = [
+distri = [
     "build",
     "twine"
 ]
-documentation = [
-    "autoclasstoc",
-    "autodoc_pydantic",
+docs = [
     "sphinx",
     "sphinx-autodoc-typehints",
-    "sphinx-gallery",
     "sphinx-rtd-theme"
 ]
-all = [
-    "deinterlace[gpu]",
-    "deinterlace[testing]",
-    "deinterlace[linting]",
-    "deinterlace[coverage]",
-    "deinterlace[distribution]",
-    "deinterlace[documentation]"
+dev = [
+    "deinterlacing[test]",
+    "deinterlacing[lint]",
+    "deinterlacing[cov]",
+    "deinterlacing[distrib]",
+    "deinterlacing[docs]"
 ]
 
 
@@ -111,7 +116,7 @@ all = [
 
 [tool.setuptools]
 packages = [
-    "deinterlace",
+    "deinterlacing",
 ]
 
 
@@ -167,9 +172,11 @@ pretty_print = true
 [tool.coverage.html]
 show_contexts = true
 
+
 #///////////////////////////////////////////////////////////////////////////////////////
 #// GENERAL RUFF CONFIUGRATION
 #///////////////////////////////////////////////////////////////////////////////////////
+
 
 [tool.ruff]
 exclude = [
@@ -204,6 +211,7 @@ line-length = 88 # Black Compatibility
 indent-width = 4 # Black Compatibility
 output-format = "json"
 
+
 #///////////////////////////////////////////////////////////////////////////////////////
 #// LINTING CONFIGURATION (RUFF)
 #///////////////////////////////////////////////////////////////////////////////////////
@@ -236,8 +244,12 @@ ignore = [
     "E501",
     "E701",
     "COM812",
+    "COM818",
     'ERA001', 'T201', # Code comments
     'RET503', # No explicit return None
+    'FIX002', # Fixme comments
+    "TD002",
+    "TD003",
     "TRY003", # external messages in exceptions are too verbose
 ]
 
@@ -263,3 +275,11 @@ skip-magic-trailing-comma = false  # Black Compatibility
 line-ending = "auto"  # Black Compatibility
 docstring-code-format = true  # Auto-formatting of code examples in docstrings
 docstring-code-line-length = "dynamic"  # Line length for code examples in docstrings
+
+[tool.uv.sources]
+deinterlacing = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "deinterlacing[dev]",
+]
