@@ -46,25 +46,36 @@ class ParameterError(ValueError):
 def calculate_offset_matrix(
     images: NDArrayLike, fft_module: Literal[np, cp] = np
 ) -> NDArrayLike:
-    # offset, avoid division by zero in normalization
-    OFFSET = 1e-5  # noqa: N806
+    # offset used simply to avoid division by zero in normalization
+    OFFSET = 1e-10  # noqa: N806
 
-    forward = fft_module.fft.fft(images[..., 1::2, :], axis=-1)
-    forward /= np.abs(forward) + OFFSET
+    backward = fft_module.fft.fft(images[..., 1::2, :], axis=-1)
+    backward /= fft_module.abs(backward) + OFFSET
 
-    backward = fft_module.fft.fft(images[..., ::2, :], axis=-1)
-    np.conj(backward, out=backward)
-    backward /= np.abs(backward) + OFFSET
-    backward = backward[..., : forward.shape[-2], :]
+    forward = fft_module.fft.fft(images[..., ::2, :], axis=-1)
+    fft_module.conj(forward, out=forward)
+    forward /= fft_module.abs(forward) + OFFSET
+    forward = forward[..., : backward.shape[-2], :]
 
     # inverse
-    comp_conj = fft_module.fft.ifft(forward * backward, axis=-1)
-    comp_conj = np.real(comp_conj)
+    comp_conj = fft_module.fft.ifft(backward * forward, axis=-1)
+    comp_conj = fft_module.real(comp_conj)
     if comp_conj.ndim == 3:
         comp_conj = comp_conj.mean(axis=1)
     if comp_conj.ndim == 2:
         comp_conj = comp_conj.mean(axis=0)
-    return fft_module.fft.fftshift(comp_conj)  # ifftshift?
+    return fft_module.fft.ifftshift(comp_conj)
+    # REVIEW: Should this be ifftshift or fftshift?
+
+
+# This is to use dictionary dispatch in extract_image_block
+POOL_FUNCS = {
+    "mean": lambda x: x.mean(axis=0),
+    "median": lambda x: np.median(x, axis=0),
+    "std": lambda x: x.std(axis=0, ddof=1),
+    "sum": lambda x: x.sum(axis=0),
+    None: lambda x: x,
+}
 
 
 def extract_image_block(
@@ -74,15 +85,7 @@ def extract_image_block(
     pool: Literal["mean", "median", "std", "sum", None],
 ) -> NDArrayLike:
     image_block = images[start:stop, ...]
-    if pool == "mean":
-        return image_block.mean(axis=0).astype(images.dtype)
-    if pool == "median":
-        return np.median(image_block, axis=0).astype(images.dtype)
-    if pool == "std":
-        return image_block.std(axis=0, ddof=1).astype(images.dtype)
-    if pool == "sum":
-        return image_block.sum(axis=0).astype(images.dtype)
-    return image_block
+    return POOL_FUNCS[pool](image_block).astype(images.dtype)
 
 
 def find_pixel_offset(
@@ -91,7 +94,8 @@ def find_pixel_offset(
     subsearch: int,
 ) -> int:
     # search only subspace to save computation time and avoid any artifacts from edge
-    # of image. extremely important!
+    # of image. Extremely important for avoiding artifacts, not sure about about
+    # performance impact in practice.
     peak = np.argmax(
         offset_matrix[-subsearch + images.shape[-2] // 2 : images.shape[-1] // 2]
         + subsearch
@@ -123,9 +127,18 @@ def find_subpixel_offset(
     subsearch: int,
 ) -> float:
     peak = find_pixel_offset(images, offset_matrix, subsearch)
+    if peak <= 0 or peak >= offset_matrix.shape[0] - 1:
+        return float(peak)  # Just a boundary check here; return it as is
+
+    # this part is just a manual implementation of quadratic interpolation
+    # to find sub-pixel offset. Something more sophisticated might be more appropriate,
+    # but this is the first thing that came to mind.
     y0, y1, y2 = offset_matrix[peak - 1], offset_matrix[peak], offset_matrix[peak + 1]
-    subpixel_offset = 0.5 * (y0 - y2) / (y0 - 2 * y1 + y2)
-    # Combine integer offset with sub-pixel refinement
+    denominator = y0 - 2 * y1 + y2
+    if abs(denominator) < 1e-10:
+        # If the denominator is too close to zero, interpolation is not reliable.
+        return float(peak)
+    subpixel_offset = 0.5 * (y0 - y2) / denominator
     return peak - subpixel_offset
 
 
@@ -177,14 +190,24 @@ def align_subpixels(
     fft_module: Literal[np, cp] = np,
 ) -> None:
     backward_lines = images[start:stop, 1::2, ...]
-    fft_lines = fft_module.fft.fft(backward_lines, axis=-1)
+    shape = backward_lines.shape
+    vectorized = backward_lines.reshape(-1, backward_lines.shape[-1])
+    fft_lines = fft_module.fft.fft(vectorized, axis=-1)
+
+    # FREQUENCY CACHE
     n = fft_lines.shape[-1]
-    freq = fft_module.fft.fftfreq(n)
+    if (freq := getattr(align_subpixels, "freq", None)) is None:
+        # Cache the frequencies for the first time
+        freq = fft_module.fft.fftfreq(n)
+        align_subpixels.freq = {n: freq}
+    elif (freq := freq.get(n)) is None:
+        freq = fft_module.fft.fftfreq(n)
+        align_subpixels.freq[n] = freq
+
     phase = -2.0 * fft_module.pi * offset * freq
     fft_lines *= fft_module.exp(1j * phase)
-    images[start:stop, 1::2, :] = fft_module.real(
-        fft_module.fft.ifft(fft_lines, axis=-1)
-    )
+    result = fft_module.real(fft_module.fft.ifft(fft_lines, axis=-1))
+    images[start:stop, 0.1::2, ...] = result.reshape(shape)
 
 
 def wrap_cupy(
