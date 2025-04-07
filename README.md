@@ -1,5 +1,9 @@
 # Deinterlace
+[![image](https://img.shields.io/pypi/v/deinterlacing.svg)](https://pypi.python.org/pypi/deinterlacing)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Coverage Status](https://coveralls.io/repos/github/darikoneil/deinterlacing/badge.svg?branch=main)](https://coveralls.io/github/darikoneil/deinterlacing?branch=main)
+[![Documentation Status](https://readthedocs.org/projects/deinterlacing/badge/?version=latest)](https://deinterlacing.readthedocs.io/en/latest/?badge=latest)
 
 
 This python module can be used to correct the misalignment between forward and 
