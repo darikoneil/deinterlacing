@@ -11,8 +11,6 @@ try:
     import cupy as cp
 except ImportError:
     cp = np
-else:
-    pass
 
 __all__ = [
     "align_pixels",
@@ -70,10 +68,10 @@ def calculate_offset_matrix(
 
 # This is to use dictionary dispatch in extract_image_block
 POOL_FUNCS = {
-    "mean": lambda x: x.mean(axis=0),
-    "median": lambda x: np.median(x, axis=0),
-    "std": lambda x: x.std(axis=0, ddof=1),
-    "sum": lambda x: x.sum(axis=0),
+    "mean": lambda x: x.mean(axis=0).astype(x.dtype),
+    "median": lambda x: np.median(x, axis=0).astype(x.dtype),
+    "std": lambda x: x.std(axis=0, ddof=1).astype(x.dtype),
+    "sum": lambda x: x.sum(axis=0).astype(x.dtype),
     None: lambda x: x,
 }
 
@@ -171,26 +169,18 @@ def index_image_blocks(
     return blocks
 
 
-def align_pixels(images: NDArrayLike, start: int, stop: int, phase_offset: int) -> None:
-    if phase_offset > 0:
-        images[start:stop, 1::2, phase_offset:] = images[
-            start:stop, 1::2, :-phase_offset
-        ]
-    elif phase_offset < 0:
-        images[start:stop, 1::2, :phase_offset] = images[
-            start:stop, 1::2, -phase_offset:
-        ]
+def align_pixels(images: NDArrayLike, start: int, stop: int, offset: int) -> None:
+    if offset > 0:
+        images[start:stop, 1::2, offset:] = images[start:stop, 1::2, :-offset]
+    elif offset < 0:
+        images[start:stop, 1::2, :offset] = images[start:stop, 1::2, -offset:]
 
 
-def align_subpixels(
-    images: NDArrayLike,
-    start: int,
-    stop: int,
-    offset: int,
+def correct_subpixel_offset(
+    backward_lines: NDArrayLike,
+    offset: float,
     fft_module: Literal[np, cp] = np,
 ) -> None:
-    backward_lines = images[start:stop, 1::2, ...]
-    shape = backward_lines.shape
     vectorized = backward_lines.reshape(-1, backward_lines.shape[-1])
     fft_lines = fft_module.fft.fft(vectorized, axis=-1)
 
@@ -203,11 +193,28 @@ def align_subpixels(
     elif (freq := freq.get(n)) is None:
         freq = fft_module.fft.fftfreq(n)
         align_subpixels.freq[n] = freq
-
-    phase = -2.0 * fft_module.pi * offset * freq
+    # HACK: This hack makes sure the frequency cache is an appropriate type, because
+    #  the test suite will fail in an order-dependent way if the cache is not the
+    #  appropriate type
+    phase = -2.0 * fft_module.pi * offset * fft_module.asarray(freq)
     fft_lines *= fft_module.exp(1j * phase)
-    result = fft_module.real(fft_module.fft.ifft(fft_lines, axis=-1))
-    images[start:stop, 0.1::2, ...] = result.reshape(shape)
+    return fft_module.real(fft_module.fft.ifft(fft_lines, axis=-1))
+
+
+def align_subpixels(
+    images: NDArrayLike,
+    start: int,
+    stop: int,
+    offset: float,
+    fft_module: Literal[np, cp] = np,
+) -> None:
+    backward_lines = images[start:stop, 1::2, ...]
+    if fft_module == cp:
+        corrector = wrap_cupy(correct_subpixel_offset, "backward_lines", "offset")
+    else:
+        corrector = correct_subpixel_offset
+    vectorized_correction = corrector(backward_lines, offset, fft_module=fft_module)
+    images[start:stop, 1::2, ...] = vectorized_correction.reshape(backward_lines.shape)
 
 
 def wrap_cupy(

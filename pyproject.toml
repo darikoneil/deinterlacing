@@ -133,7 +133,7 @@ addopts = [
     "-vv",
     "--diff-width=120",
 ]
-tests = "tests"
+#tests = "tests"
 console_output_style = "progress"
 
 
@@ -147,6 +147,8 @@ branch = true
 command_line = "-m pytest"
 omit = [
     "*/tests/*",
+    "*/*JetBrains*/*",  # Exclude JetBrains specific files
+    "*/*PyCharm*Professional*/*",
 ]
 dynamic_context = "test_function"
 
@@ -248,9 +250,11 @@ ignore = [
     'ERA001', 'T201', # Code comments
     'RET503', # No explicit return None
     'FIX002', # Fixme comments
+    'FIX004', # Fixme comments
     "TD002",
     "TD003",
     "TRY003", # external messages in exceptions are too verbose
+    "S101",
 ]
 
 [tool.ruff.lint.flake8-annotations]

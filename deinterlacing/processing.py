@@ -1,9 +1,10 @@
+from dataclasses import InitVar
 from functools import partial
 from math import inf
 from typing import Literal
 
 import numpy as np
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 from pydantic.dataclasses import dataclass
 from tqdm import tqdm
 
@@ -32,7 +33,7 @@ __all__ = [
 ]
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, config=ConfigDict(arbitrary_types_allowed=True))
 class DeinterlaceParameters:
     #: Number of frames included per FFT calculation.
     block_size: int | None = None
@@ -48,11 +49,11 @@ class DeinterlaceParameters:
     #: use gpu
     use_gpu: bool = False
     #: images to validate against
-    _images: NDArrayLike | None = Field(default=None, init_var=True)
+    images: InitVar[NDArrayLike | None] = None
 
-    def __post_init__(self, _images: NDArrayLike | None = None) -> None:
-        if _images is not None:
-            self.validate_with_images(_images)
+    def __post_init__(self, images: NDArrayLike | None) -> None:
+        if images is not None:
+            self.validate_with_images(images)
 
     @field_validator("block_size", "unstable", "subsearch", mode="after")
     @classmethod
@@ -174,7 +175,7 @@ def deinterlace(
                 partial(calculate_offset_matrix, fft_module=cp), "images"
             )
             find_peak = find_subpixel_offset
-            align_images = wrap_cupy(partial(align_subpixels, fft_module=cp), "images")
+            align_images = partial(align_subpixels, fft_module=cp)
         case _:
             msg = (
                 f"Invalid combination of align='{parameters.align}' and use_gpu={parameters.use_gpu}. "
@@ -187,8 +188,12 @@ def deinterlace(
     for start, stop in index_image_blocks(
         images, parameters.block_size, parameters.unstable
     ):
-        # This isn't done inline due to the 'pool' parameter potentially changing the
-        # shape of the images being processed.
+        # NOTE: Extraction isn't done inline due to the 'pool' parameter potentially
+        #  changing the shape of the images being processed. In some cases this means
+        #  the returned block_images will not be views of the original images, but
+        #  currently this only occurs when reducing the number of frames to process
+        #  through pool.If adding a feature here in the future (e.g., upscaling), one
+        #  will need to remember this is no view guarantee here.
         block_images = extract_image_block(images, start, stop, parameters.pool)
         offset_matrix = calculate_matrix(block_images)
         offset = find_peak(block_images, offset_matrix, parameters.subsearch)
