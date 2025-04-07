@@ -1,4 +1,4 @@
-# Deinterlace
+# Deinterlacing
 [![image](https://img.shields.io/pypi/v/deinterlacing.svg)](https://pypi.python.org/pypi/deinterlacing)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
