@@ -46,6 +46,10 @@ class DeinterlaceParameters:
     subsearch: int | None = 15
     #: Align
     align: Literal["pixel", "subpixel"] = "pixel"
+    #: has_turnaround
+    has_turnaround: bool = False
+    #: null edges
+    null_edges: bool = False
     #: use gpu
     use_gpu: bool = False
     #: images to validate against
