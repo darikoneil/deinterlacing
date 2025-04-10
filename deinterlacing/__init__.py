@@ -1,4 +1,5 @@
-from deinterlacing.processing import DeinterlaceParameters, deinterlace
+from deinterlacing.parameters import DeinterlaceParameters
+from deinterlacing.processing import deinterlace
 
 __all__ = [
     "DeinterlaceParameters",

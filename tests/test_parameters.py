@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from deinterlacing.processing import DeinterlaceParameters
-from deinterlacing.tools import ParameterError
+from deinterlacing import DeinterlaceParameters
+from deinterlacing.parameters import ParameterError
 
 
 def test_init() -> None:
@@ -128,10 +128,18 @@ def test_gpu_not_available(monkeypatch: pytest.MonkeyPatch) -> None:
     :param monkeypatch: pytest's monkeypatch fixture
     :returns: None
     """
+    import deinterlacing.alignment as alignment
+    import deinterlacing.offsets as offsets
+    import deinterlacing.parameters as params
     import deinterlacing.processing as proc
+    import deinterlacing.tools as tools
 
     # Simulate CuPy not available
     monkeypatch.setattr(proc, "cp", proc.np)
+    monkeypatch.setattr(params, "cp", params.np)
+    monkeypatch.setattr(tools, "cp", tools.np)
+    monkeypatch.setattr(alignment, "cp", alignment.np)
+    monkeypatch.setattr(offsets, "cp", offsets.np)
 
     params = DeinterlaceParameters(use_gpu=True)
     with pytest.raises(ValueError, match="CuPy is not available"):
