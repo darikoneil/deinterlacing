@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deinterlacing"
-version = "1.0.3"
+version = "1.0.5"
 description = "A python library for deinterlacing images collected using resonant-scanning microscopes."
 readme = "README.md"
 requires-python = ">=3.10, <=4.0"
@@ -91,20 +91,16 @@ cov = [
     "toml",
     "tomli-w"
 ]
-distri = [
-    "build",
-    "twine"
-]
 docs = [
     "sphinx",
     "sphinx-autodoc-typehints",
+    "autodoc_pydantic",
     "sphinx-rtd-theme"
 ]
 dev = [
     "deinterlacing[test]",
     "deinterlacing[lint]",
     "deinterlacing[cov]",
-    "deinterlacing[distrib]",
     "deinterlacing[docs]"
 ]
 
