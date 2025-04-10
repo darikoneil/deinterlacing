@@ -22,7 +22,7 @@ if "%1"=="" (goto end)
 :: build source
 :source
 echo Building source
-call sphinx-apidoc -o docs/source exporgo -f -e
+call sphinx-apidoc -o docs/source deinterlacing -f -e
 shift
 goto loop
 

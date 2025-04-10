@@ -1,8 +1,32 @@
 import os
 import sys
-
 import toml
-from autoclasstoc import Section
+from unittest.mock import MagicMock
+
+
+"""
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mocks
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+"""
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+# NOTE: Stops guarded type _typeshed warning during build
+MOCK_MODULES = ['_typeshed', "PydanticDataclass"]
+
+try:
+    import cupy as cp
+except ImportError:
+    # NOTE: Read-the-docs doesn't have cupy installed, so we need to mock it
+    MOCK_MODULES.append('cp')
+
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 
 """
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +65,6 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    "autoclasstoc",
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_autodoc_typehints']
 
@@ -52,9 +75,8 @@ language = 'en'
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'ipykernel': ('https://ipykernel.readthedocs.io/en/stable/', None),
-    'ipython': ('https://ipython.readthedocs.io/en/stable/', None),
-    'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'cupy': ('https://docs.cupy.dev/en/stable/', None),
 }
 
 root_doc = "index"
@@ -95,25 +117,6 @@ simplify_optional_unions = False
 typehints_use_signature = False
 
 typehints_use_signature_return = False
-
-
-"""
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// AutoClassToc Configuration
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-"""
-
-
-autoclasstoc_sections = [
-    #'read-only-properties',
-    #'read-write-properties',
-    'public-attrs',
-    'public-methods',
-    'public-methods-without-dunders',
-    'private-methods',
-    'private-attrs',
-    #'enumeration',
-    ]
 
 
 """
