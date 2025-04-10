@@ -1,22 +1,18 @@
-from dataclasses import InitVar
 from functools import partial
-from math import inf
-from typing import Literal
 
 import numpy as np
-from pydantic import ConfigDict, Field, field_validator
-from pydantic.dataclasses import dataclass
 from tqdm import tqdm
 
-from deinterlacing.tools import (
-    NDArrayLike,
-    ParameterError,
-    align_pixels,
-    align_subpixels,
+from deinterlacing.alignment import align_pixels, align_subpixels
+from deinterlacing.offsets import (
     calculate_offset_matrix,
-    extract_image_block,
     find_pixel_offset,
     find_subpixel_offset,
+)
+from deinterlacing.parameters import DeinterlaceParameters
+from deinterlacing.tools import (
+    NDArrayLike,
+    extract_image_block,
     index_image_blocks,
     wrap_cupy,
 )
@@ -28,90 +24,8 @@ except ImportError:
 
 
 __all__ = [
-    "DeinterlaceParameters",
     "deinterlace",
 ]
-
-
-@dataclass(slots=True, config=ConfigDict(arbitrary_types_allowed=True))
-class DeinterlaceParameters:
-    #: Number of frames included per FFT calculation.
-    block_size: int | None = None
-    #: Whether to apply subsampling
-    pool: Literal["mean", "median", "std", "sum", None] = None
-    #: Number of frames to deinterlace individually before switching to batch-wise
-    #: processing.
-    unstable: int | None = None
-    #: Subsearc
-    subsearch: int | None = 15
-    #: Align
-    align: Literal["pixel", "subpixel"] = "pixel"
-    #: has_turnaround
-    has_turnaround: bool = False
-    #: null edges
-    null_edges: bool = False
-    #: use gpu
-    use_gpu: bool = False
-    #: images to validate against
-    images: InitVar[NDArrayLike | None] = None
-
-    def __post_init__(self, images: NDArrayLike | None) -> None:
-        if images is not None:
-            self.validate_with_images(images)
-
-    @field_validator("block_size", "unstable", "subsearch", mode="after")
-    @classmethod
-    def _validate_positive_integer(cls, value: int | None, ctx: Field) -> int | None:
-        """
-        Validate that the given value is a positive integer or None.
-
-        :param value: The value to validate, which can be an integer or None.
-        :returns: The validated value, or None if the input was None.
-        """
-        if value is not None and value <= 0:
-            raise ParameterError(parameter=ctx.field_name, value=value, limits=(0, inf))
-        return value
-
-    def validate_with_images(self, images: NDArrayLike) -> None:
-        """
-        Validate the parameters against the provided images..
-
-        :param images: The images to validate against.
-        :returns: None
-        """
-        # BLOCK SIZE
-        if self.block_size is None:
-            self.block_size = images.shape[0]
-        if self.block_size > images.shape[0]:
-            raise ParameterError(
-                parameter="block_size",
-                value=self.block_size,
-                limits=(1, images.shape[0]),
-            )
-
-        # SUBSEARCH
-        if self.subsearch is None:
-            min_dim = min(images.shape[1:])  # Get the minimum spatial dimension
-            self.subsearch = min_dim // 16
-        if self.subsearch > min(images.shape[1:]):
-            raise ParameterError(
-                parameter="subsearch",
-                value=self.subsearch,
-                limits=(1, min(images.shape[1:]) - 1),
-            )
-
-        # UNSTABLE
-        if self.unstable is not None and self.unstable > images.shape[0]:
-            raise ParameterError(
-                parameter="unstable",
-                value=self.unstable,
-                limits=(0, images.shape[0]),
-            )
-
-        # USE GPU
-        if self.use_gpu and cp == np:
-            msg = "CuPy is not available. GPU acceleration cannot be used."
-            raise ValueError(msg)
 
 
 def deinterlace(
@@ -180,7 +94,9 @@ def deinterlace(
             )
             find_peak = find_subpixel_offset
             align_images = partial(align_subpixels, fft_module=cp)
-        case _:
+        case _:  # pragma: no cover
+            # NOTE: This should never be reached due to the validation in
+            #  DeinterlaceParameters
             msg = (
                 f"Invalid combination of align='{parameters.align}' and use_gpu={parameters.use_gpu}. "
                 "Align must be either 'pixel' or 'subpixel', and use_gpu must be a boolean."

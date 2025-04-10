@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from deinterlacing.processing import DeinterlaceParameters, deinterlace
+from deinterlacing import DeinterlaceParameters
+from deinterlacing.processing import deinterlace
 
 
 def test_deinterlace_frames_gt_dims(
