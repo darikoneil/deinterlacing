@@ -20,6 +20,7 @@ __all__ = [
     "wrap_cupy",
 ]
 
+# NOTE: Using type aliasing instead of type for backwards compatibility to 3.10
 #: Type alias for numpy array-like data structures.
 NDArrayLike: TypeAlias = np.ndarray | cp.ndarray
 
