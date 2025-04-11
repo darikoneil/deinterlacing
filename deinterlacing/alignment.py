@@ -41,8 +41,7 @@ def correct_subpixel_offset(
         freq = fft_module.fft.fftfreq(n)
         align_subpixels.freq[n] = freq
     # HACK: This hack makes sure the frequency cache is an appropriate type, because
-    #  the test suite will fail in an order-dependent way if the cache is not the
-    #  appropriate type
+    #  the test suite will fail in an order-dependent way due to mismatches
     phase = -2.0 * fft_module.pi * offset * fft_module.asarray(freq)
     fft_lines *= fft_module.exp(1j * phase)
     return fft_module.real(fft_module.fft.ifft(fft_lines, axis=-1))
@@ -62,3 +61,7 @@ def align_subpixels(
         corrector = correct_subpixel_offset
     vectorized_correction = corrector(backward_lines, offset, fft_module=fft_module)
     images[start:stop, 1::2, ...] = vectorized_correction.reshape(backward_lines.shape)
+
+
+def align_variable(images: NDArrayLike) -> None:
+    print(f"{images.shape=}")

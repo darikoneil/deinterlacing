@@ -12,6 +12,7 @@ from deinterlacing.offsets import (
 from deinterlacing.parameters import DeinterlaceParameters
 from deinterlacing.tools import (
     NDArrayLike,
+    compose,
     extract_image_block,
     index_image_blocks,
     wrap_cupy,
@@ -76,24 +77,34 @@ def deinterlace(
     match (parameters.align, parameters.use_gpu):
         case ("pixel", False):
             calculate_matrix = partial(calculate_offset_matrix, fft_module=np)
-            find_peak = find_pixel_offset
+            find_peak = partial(find_pixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peak)
             align_images = align_pixels
         case ("pixel", True):
             calculate_matrix = wrap_cupy(
                 partial(calculate_offset_matrix, fft_module=cp), "images"
             )
-            find_peak = find_pixel_offset
+            find_peaks = partial(find_pixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peaks)
             align_images = align_pixels
         case ("subpixel", False):
             calculate_matrix = partial(calculate_offset_matrix, fft_module=np)
-            find_peak = find_subpixel_offset
+            find_peak = partial(find_subpixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peak)
             align_images = partial(align_subpixels, fft_module=np)
         case ("subpixel", True):
             calculate_matrix = wrap_cupy(
                 partial(calculate_offset_matrix, fft_module=cp), "images"
             )
-            find_peak = find_subpixel_offset
+            find_peak = partial(find_subpixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peak)
             align_images = partial(align_subpixels, fft_module=cp)
+        case ("variable", False):
+            calculate_offset = print
+            align_images = print
+        case ("variable", True):
+            calculate_offset = print
+            align_images = print
         case _:  # pragma: no cover
             # NOTE: This should never be reached due to the validation in
             #  DeinterlaceParameters
@@ -115,8 +126,9 @@ def deinterlace(
         #  through pool.If adding a feature here in the future (e.g., upscaling), one
         #  will need to remember this is no view guarantee here.
         block_images = extract_image_block(images, start, stop, parameters.pool)
-        offset_matrix = calculate_matrix(block_images)
-        offset = find_peak(block_images, offset_matrix, parameters.subsearch)
+        # offset_matrix = calculate_matrix(block_images)
+        # offset = find_peak(block_images, offset_matrix, parameters.subsearch)
+        offset = calculate_offset(block_images)
         align_images(images, start, stop, offset)
         pbar.update(stop - start)
     pbar.close()
