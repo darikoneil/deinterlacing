@@ -41,8 +41,12 @@ def correct_subpixel_offset(
         freq = fft_module.fft.fftfreq(n)
         align_subpixels.freq[n] = freq
     # HACK: This hack makes sure the frequency cache is an appropriate type, because
-    #  the test suite will fail in an order-dependent way due to mismatches
-    phase = -2.0 * fft_module.pi * offset * fft_module.asarray(freq)
+    #  the test suite will fail stochastically if there are mismatches
+    try:
+        freq = fft_module.asarray(freq)
+    except TypeError:
+        freq = freq.get()
+    phase = -2.0 * fft_module.pi * offset * freq
     fft_lines *= fft_module.exp(1j * phase)
     return fft_module.real(fft_module.fft.ifft(fft_lines, axis=-1))
 

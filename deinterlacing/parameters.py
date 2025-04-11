@@ -42,8 +42,8 @@ class DeinterlaceParameters:
     unstable: int | None = None
     subsearch: int | None = 15
     align: Literal["pixel", "subpixel", "variable"] = "pixel"
-    has_turnaround: bool = False
-    null_edges: bool = False
+    # has_turnaround: bool = False
+    # null_edges: bool = False
     use_gpu: bool = False
     images: InitVar[NDArrayLike | None] = None
 
