@@ -1,6 +1,9 @@
+from functools import partial
 from typing import Literal
 
 import numpy as np
+from boltons.iterutils import chunk_ranges
+from scipy.optimize import Bounds, curve_fit
 
 from deinterlacing.tools import NDArrayLike
 
@@ -97,5 +100,29 @@ def calculate_offset_matrix(
     # REVIEW: Should this be ifftshift or fftshift?
 
 
-def find_variable_offset(images: np.ndarray) -> 0:
-    print(f"{images.shape=}")
+def _parabolic(x: np.ndarray, a: float, b: float, c: float) -> np.ndarray:
+    """Parabolic function for curve fitting."""
+    return a * (x**2) + b * x + c
+
+
+def find_variable_offset(
+    images: np.ndarray, line_subsections: int = 8, subsearch: int = 15
+) -> 0:
+    # TODO: Review argument defaults
+    pixels_per_line = images.shape[-1]
+    pixels_per_chunk = pixels_per_line // line_subsections
+    indices = list(chunk_ranges(pixels_per_line, pixels_per_chunk))
+    # REVIEW: This should probably be a parameter someplace
+    offset_matrices = [
+        calculate_offset_matrix(images[:, idx[0] : idx[1]]) for idx in indices
+    ]
+    phase_offsets = [
+        find_pixel_offset(images[:, idx[0] : idx[1]], offset_matrices[n], subsearch)
+        for n, idx in enumerate(indices)
+    ]
+    bounds = Bounds([-np.inf, -np.inf, -np.inf], [0, np.inf, np.inf])
+    xtrain = np.asarray([sum(idx) // 2 for idx in indices])
+    coefs = curve_fit(_parabolic, xtrain, phase_offsets, bounds=bounds)[0]
+    a_, b_, c_ = coefs
+    fit = partial(_parabolic, a=a_, b=b_, c=c_)
+    return fit
