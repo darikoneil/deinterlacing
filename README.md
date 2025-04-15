@@ -15,7 +15,7 @@ backward-scanned lines collected by resonance-scanning microscopes.
 - **Pooling Noisy Data**: Deinterlacing can be applied to pooled-pixels for improved performance on noisy or sparse images.
 - **Handles Instability**: Supports processing individual frames while autocorrection 
   methods applied during acquisition stabilize
-- **Sub-Pixel**: Pixel & Sub-Pixel registration available
+- **Sub-Pixel**: Pixel & sub-pixel registration available
 
 ## Installation
 The repository is available on PyPI and can be installed using your
