@@ -2,7 +2,7 @@ import inspect
 from collections.abc import Callable, Generator
 from functools import wraps
 from itertools import chain
-from typing import Literal, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 import numpy as np
 from boltons.iterutils import chunk_ranges
@@ -26,6 +26,17 @@ NDArrayLike: TypeAlias = np.ndarray | cp.ndarray
 
 #: Type alias for a generator of image blocks
 ImageBlockGenerator: TypeAlias = Generator[tuple[int, int], None, None]
+
+
+def compose(first_function: Callable) -> Callable:
+    def decorator(second_function: Callable) -> Callable:
+        def wrapper(arg: Any) -> Any:
+            return second_function(arg, first_function(arg))
+
+        return wrapper
+
+    return decorator
+
 
 # This is to use dictionary dispatch in extract_image_block
 _POOL_FUNCS = {

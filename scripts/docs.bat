@@ -40,7 +40,7 @@ goto loop
 echo Building readthedocs
 cd docs
 call make html
-pip freeze > rtd_requirements.txt
+uv pip freeze > rtd_requirements.txt
 python -m truncate_requirements.py
 cd ..
 shift

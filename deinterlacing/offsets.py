@@ -95,3 +95,7 @@ def calculate_offset_matrix(
         comp_conj = comp_conj.mean(axis=0)
     return fft_module.fft.ifftshift(comp_conj)
     # REVIEW: Should this be ifftshift or fftshift?
+
+
+def find_variable_offset(images: np.ndarray) -> 0:
+    print(f"{images.shape=}")

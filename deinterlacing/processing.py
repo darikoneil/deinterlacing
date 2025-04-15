@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from functools import partial
 
 import numpy as np
@@ -12,6 +13,7 @@ from deinterlacing.offsets import (
 from deinterlacing.parameters import DeinterlaceParameters
 from deinterlacing.tools import (
     NDArrayLike,
+    compose,
     extract_image_block,
     index_image_blocks,
     wrap_cupy,
@@ -26,6 +28,51 @@ except ImportError:
 __all__ = [
     "deinterlace",
 ]
+
+
+def _dispatcher(parameters: DeinterlaceParameters) -> tuple[Callable, Callable]:
+    # Set implementations for calculations
+    match (parameters.align, parameters.use_gpu):
+        case ("pixel", False):
+            calculate_matrix = partial(calculate_offset_matrix, fft_module=np)
+            find_peak = partial(find_pixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peak)
+            align_images = align_pixels
+        case ("pixel", True):
+            calculate_matrix = wrap_cupy(
+                partial(calculate_offset_matrix, fft_module=cp), "images"
+            )
+            find_peaks = partial(find_pixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peaks)
+            align_images = align_pixels
+        case ("subpixel", False):
+            calculate_matrix = partial(calculate_offset_matrix, fft_module=np)
+            find_peak = partial(find_subpixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peak)
+            align_images = partial(align_subpixels, fft_module=np)
+        case ("subpixel", True):
+            calculate_matrix = wrap_cupy(
+                partial(calculate_offset_matrix, fft_module=cp), "images"
+            )
+            find_peak = partial(find_subpixel_offset, subsearch=parameters.subsearch)
+            calculate_offset = compose(calculate_matrix)(find_peak)
+            align_images = partial(align_subpixels, fft_module=cp)
+        # case ("variable", False):
+        #    calculate_offset = print
+        #    align_images = print
+        # case ("variable", True):
+        #    calculate_offset = print
+        #    align_images = print
+        case _:  # pragma: no cover
+            # NOTE: This should never be reached due to the validation in
+            #  DeinterlaceParameters
+            msg = (
+                f"Invalid combination of align='{parameters.align}' and use_gpu={parameters.use_gpu}. "
+                "Align must be either 'pixel' or 'subpixel', and use_gpu must be a boolean."
+            )
+            raise ValueError(msg)
+
+    return calculate_offset, align_images
 
 
 def deinterlace(
@@ -71,52 +118,27 @@ def deinterlace(
     """
     parameters = parameters or DeinterlaceParameters()
     parameters.validate_with_images(images)
+    calculate_offset, align_images = _dispatcher(parameters)
 
-    # Set implementations for calculations
-    match (parameters.align, parameters.use_gpu):
-        case ("pixel", False):
-            calculate_matrix = partial(calculate_offset_matrix, fft_module=np)
-            find_peak = find_pixel_offset
-            align_images = align_pixels
-        case ("pixel", True):
-            calculate_matrix = wrap_cupy(
-                partial(calculate_offset_matrix, fft_module=cp), "images"
-            )
-            find_peak = find_pixel_offset
-            align_images = align_pixels
-        case ("subpixel", False):
-            calculate_matrix = partial(calculate_offset_matrix, fft_module=np)
-            find_peak = find_subpixel_offset
-            align_images = partial(align_subpixels, fft_module=np)
-        case ("subpixel", True):
-            calculate_matrix = wrap_cupy(
-                partial(calculate_offset_matrix, fft_module=cp), "images"
-            )
-            find_peak = find_subpixel_offset
-            align_images = partial(align_subpixels, fft_module=cp)
-        case _:  # pragma: no cover
-            # NOTE: This should never be reached due to the validation in
-            #  DeinterlaceParameters
-            msg = (
-                f"Invalid combination of align='{parameters.align}' and use_gpu={parameters.use_gpu}. "
-                "Align must be either 'pixel' or 'subpixel', and use_gpu must be a boolean."
-            )
-            raise ValueError(msg)
-
-    # now iterate
     pbar = tqdm(total=images.shape[0], desc="Deinterlacing Images", colour="blue")
     for start, stop in index_image_blocks(
         images, parameters.block_size, parameters.unstable
     ):
+        # NOTE: We invoke a similar routine for ALL implementations:
+        #  (1) We extract a block of the provided images
+        #  (2) We calculate the offset/s necessary to correct deinterlacing artifacts
+        #  (3) We align the images such that the artifact is minimized or eliminated
+
         # NOTE: Extraction isn't done inline due to the 'pool' parameter potentially
         #  changing the shape of the images being processed. In some cases this means
         #  the returned block_images will not be views of the original images, but
         #  currently this only occurs when reducing the number of frames to process
         #  through pool.If adding a feature here in the future (e.g., upscaling), one
         #  will need to remember this is no view guarantee here.
+
         block_images = extract_image_block(images, start, stop, parameters.pool)
-        offset_matrix = calculate_matrix(block_images)
-        offset = find_peak(block_images, offset_matrix, parameters.subsearch)
+        offset = calculate_offset(block_images)
         align_images(images, start, stop, offset)
+
         pbar.update(stop - start)
     pbar.close()

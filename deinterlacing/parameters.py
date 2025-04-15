@@ -20,24 +20,31 @@ __all__ = [
 
 @dataclass(slots=True, config=ConfigDict(arbitrary_types_allowed=True))
 class DeinterlaceParameters:
-    #: Number of frames included per FFT calculation.
+    """
+    DeinterlaceParameters encapsulates the parameters utilized in
+    :func:`deinterlacing <deinterlacing.deinterlacing>` to control the deinterlacing
+    process. The structure also contains validation logic to ensure that the
+    parameters are appropriate for the provided images.
+
+    :var block_size: f
+    :var pool:  f
+    :var unstable: f
+    :var subsearch: f
+    :var align: f
+    :var has_turnaround: f
+    :var null_edges: f
+    :var use_gpu: f
+    :var images: f
+    """
+
     block_size: int | None = None
-    #: Whether to apply subsampling
     pool: Literal["mean", "median", "std", "sum", None] = None
-    #: Number of frames to deinterlace individually before switching to batch-wise
-    #: processing.
     unstable: int | None = None
-    #: Subsearc
     subsearch: int | None = 15
-    #: Align
-    align: Literal["pixel", "subpixel"] = "pixel"
-    #: has_turnaround
-    has_turnaround: bool = False
-    #: null edges
-    null_edges: bool = False
-    #: use gpu
+    align: Literal["pixel", "subpixel", "variable"] = "pixel"
+    # has_turnaround: bool = False
+    # null_edges: bool = False
     use_gpu: bool = False
-    #: images to validate against
     images: InitVar[NDArrayLike | None] = None
 
     def __post_init__(self, images: NDArrayLike | None) -> None:
