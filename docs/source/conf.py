@@ -2,7 +2,7 @@ import os
 import sys
 import toml
 from unittest.mock import MagicMock
-
+from pydantic.dataclasses import dataclass as PydanticDataclass
 
 """
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -10,14 +10,17 @@ from unittest.mock import MagicMock
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 """
 
+# NOTE: Stops guarded type _typeshed warning during build that I can't seem to
+#  permanently stamp out
+MOCK_MODULES = ['_typeshed', 'PydanticDataclass']
+
 
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
         return MagicMock()
 
-# NOTE: Stops guarded type _typeshed warning during build
-MOCK_MODULES = ['_typeshed', "PydanticDataclass"]
+
 
 try:
     import cupy as cp
@@ -66,7 +69,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinxcontrib.autodoc_pydantic',
-    'sphinx_autodoc_typehints']
+    'sphinx_autodoc_typehints',
+    'myst_parser',
+]
 
 
 templates_path = ['_templates']
@@ -77,6 +82,7 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
     'cupy': ('https://docs.cupy.dev/en/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None)
 }
 
 root_doc = "index"
@@ -137,3 +143,8 @@ autodoc_pydantic_model_show_validator_members = True
 """
 
 #html_css_files = ["css/custom.css"]
+
+autodoc_mock_imports = [
+    'cupy',
+    'PydanticDataclass',
+]

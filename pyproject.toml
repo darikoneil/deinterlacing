@@ -95,7 +95,8 @@ docs = [
     "sphinx",
     "sphinx-autodoc-typehints",
     "autodoc_pydantic",
-    "sphinx-rtd-theme"
+    "sphinx-rtd-theme",
+    "myst-parser",
 ]
 dev = [
     "deinterlacing[test]",

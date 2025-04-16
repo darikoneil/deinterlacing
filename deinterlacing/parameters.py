@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 import numpy as np
 from pydantic import ConfigDict, Field, field_validator
-from pydantic.dataclasses import dataclass
+from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from deinterlacing.tools import NDArrayLike
 
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-@dataclass(slots=True, config=ConfigDict(arbitrary_types_allowed=True))
+@pydantic_dataclass(slots=True, config=ConfigDict(arbitrary_types_allowed=True))
 class DeinterlaceParameters:
     """
     DeinterlaceParameters encapsulates the parameters utilized in
