@@ -42,7 +42,7 @@ def compose(first_function: Callable) -> Callable:
 _POOL_FUNCS = {
     "mean": lambda x: x.mean(axis=0).astype(x.dtype),
     "median": lambda x: np.median(x, axis=0).astype(x.dtype),
-    "std": lambda x: x.std(axis=0, ddof=1).astype(x.dtype),
+    "std": lambda x: x.std(axis=0).astype(x.dtype),
     "sum": lambda x: x.sum(axis=0).astype(x.dtype),
     None: lambda x: x,
 }
@@ -55,7 +55,7 @@ def extract_image_block(
     pool: Literal["mean", "median", "std", "sum", None],
 ) -> NDArrayLike:
     image_block = images[start:stop, ...]
-    return _POOL_FUNCS[pool](image_block).astype(images.dtype)
+    return _POOL_FUNCS[pool](image_block)
 
 
 def index_image_blocks(
