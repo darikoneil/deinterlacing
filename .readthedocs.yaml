@@ -24,4 +24,4 @@ formats:
 python:
   install:
     - requirements: docs/rtd_requirements.txt
-#    - path: .
+    - path: .
